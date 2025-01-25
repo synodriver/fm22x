@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing_extensions import Self, Protocol
+from typing import Self, Protocol
 
 
 class ProtocolFrame(Protocol):

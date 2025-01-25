@@ -29,6 +29,10 @@ class Command(IntEnum):
     DEMO_MODE = 0xFE
 
 
+class MsgId(IntEnum):
+    MID_RESET = 0x10  # todo
+
+
 class FaceDir(IntEnum):
     UP = 0x10
     DOWN = 0x08
@@ -65,8 +69,35 @@ class Request:
         checksum = calculate_checksum(data)
         return data + checksum.to_bytes(1, "big")
 
+    @property
+    def size(self):
+        return len(self.data)
 
-class Response: ...
+
+class ResponseMeta(type):
+    register_types = {}
+
+    def __new__(cls, name, bases, attrs, **kwargs):
+        tp = super().__new__(cls, name, bases, attrs, **kwargs)
+        if name != "Response":
+            cls.register_types[tp.msg_id] = tp
+        return tp
+
+
+class Response(metaclass=ResponseMeta):
+    @classmethod
+    def decode(cls, mid: int, data: bytes) -> "Response":
+        return cls.register_types[mid].from_bytes(data)
+
+
+class MidReset(Response):
+    msg_id = MsgId.MID_RESET
+    size = 0
+    data = b""
+
+    @classmethod
+    def from_bytes(cls, data: bytes):
+        return cls()
 
 
 class Reset(Request):
@@ -92,7 +123,6 @@ class Verify(Request):
         """
         self.pd_rightaway = pd_rightaway
         self.timeout = timeout
-        self.size = 2
         self.data = int(pd_rightaway).to_bytes(1, "big") + timeout.to_bytes(1, "big")
 
 
@@ -119,4 +149,146 @@ class Enroll(Request):
             + face_dir.to_bytes(1, "big")
             + timeout.to_bytes(1, "big")
         )
-        self.size = len(self.data)
+
+
+class EnrollSingle(Request):
+    command = Command.ENROLL_SINGLE
+
+    def __init__(self, admin: bool, user_name: str, face_dir: FaceDir, timeout: int):
+        """
+
+        :param admin: 是否设置为管理员(yes:1 no:0)
+        :param user_name: 录入用户姓名
+        :param face_dir: 不使用
+        :param timeout: 录入超时时间（单位s）
+        """
+        self.admin = admin
+        if len(user_name) > 32:
+            raise ValueError("User name too long")
+        self.user_name = user_name
+        self.face_dir = face_dir
+        self.timeout = timeout
+        self.data = (
+            int(admin).to_bytes(1, "big")
+            + user_name.encode("utf-8")
+            + face_dir.to_bytes(1, "big")
+            + timeout.to_bytes(1, "big")
+        )
+
+
+class DeleteUser(Request):
+    command = Command.DELETE_USER
+
+    def __init__(self, user_id: int):
+        """
+
+        :param user_id: 用户ID
+        """
+        self.user_id = user_id
+        self.data = user_id.to_bytes(2, "big")
+
+
+class DeleteAll(Request):
+    command = Command.DELETE_ALL
+    size = 0
+    data = b""
+
+
+class GetUserInfo(Request):
+    command = Command.GET_USER_INFO
+
+    def __init__(self, user_id: int):
+        """
+
+        :param user_id: 用户ID
+        """
+        self.user_id = user_id
+        self.data = user_id.to_bytes(2, "big")
+
+
+class FaceReset(Request):
+    """
+    清除录入状态
+    """
+
+    command = Command.FACE_RESET
+    size = 0
+    data = b""
+
+
+class MidGetAllUserid(Request):
+    """
+    获取所有已注册用户 数量和ID
+    """
+
+    command = Command.MID_GET_ALL_USERID
+    size = 0
+    data = b""
+
+
+class MidEnrollITG(Request):
+    command = Command.MID_ENROLL_ITG
+
+    def __init__(
+        self,
+        admin: bool,
+        user_name: str,
+        face_dir: FaceDir,
+        enroll_type: bool,
+        enable_duplicate: bool,
+        timeout: int,
+    ):
+        """
+
+        :param admin: 是否设置为管理员(yes:1 no:0)
+        :param user_name: 录入用户姓名
+        :param face_dir: 不使用
+        :param enroll_type: 注册类型：交互录入或单帧录入
+        :param enable_duplicate: 0
+        :param timeout: 录入超时时间（单位s）
+        """
+        self.admin = admin
+        if len(user_name) > 32:
+            raise ValueError("User name too long")
+        self.user_name = user_name
+        self.face_dir = face_dir
+        self.enroll_type = enroll_type
+        self.enable_duplicate = enable_duplicate
+        self.timeout = timeout
+        self.data = (
+            int(admin).to_bytes(1, "big")
+            + user_name.encode("utf-8")
+            + face_dir.to_bytes(1, "big")
+            + int(enroll_type).to_bytes(1, "big")
+            + int(enable_duplicate).to_bytes(1, "big")
+            + timeout.to_bytes(1, "big")
+            + b"\0\0\0"
+        )
+
+
+class GetVersion(Request):
+    command = Command.GET_VERSION
+    size = 0
+    data = b""
+
+
+class InitEncryptIO(Request):
+    command = Command.INIT_ENCRYPTIO
+
+    def __init__(self, seed: int):
+        """
+
+        :param seed: 随机种子
+        """
+        self.data = seed.to_bytes(4, "big")
+
+
+class MidSetReleaseEncKey(Request):
+    command = Command.MID_SET_RELEASE_ENC_KEY
+
+    def __init__(self, enc_key_number: bytes):
+        """
+
+        :param enc_key_number: 加密序列
+        """
+        self.data = enc_key_number
