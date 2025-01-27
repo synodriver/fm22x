@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import functools
 import operator
-from dataclasses import dataclass
 from enum import IntEnum
+
+from typing import Literal
 
 
 class Command(IntEnum):
@@ -18,7 +19,7 @@ class Command(IntEnum):
     MID_GET_ALL_USERID = 0x24
     MID_ENROLL_ITG = 0x26
     GET_VERSION = 0x30
-    INIT_ENCRYPTIO = 0x50
+    INIT_ENCRYPTION = 0x50
     MID_SET_RELEASE_ENC_KEY = 0x52
     MID_SET_DEBUG_ENC_KEY = 0x53
     MID_GET_SN = 0x93
@@ -27,10 +28,6 @@ class Command(IntEnum):
     MID_UPGRADE_FW = 0xF6
     MID_ENROLL_WITH_PHOTO = 0xF7
     DEMO_MODE = 0xFE
-
-
-class MsgId(IntEnum):
-    MID_RESET = 0x10  # todo
 
 
 class FaceDir(IntEnum):
@@ -42,20 +39,16 @@ class FaceDir(IntEnum):
     UNDEFINE = 0x00  # 未定义，默认为正向
 
 
+class EnrollType(IntEnum):
+    INTERACTIVE = 0x00  # 交互录入
+    SINGLE = 0x01  # 单帧录入
+
+
 def calculate_checksum(data: bytes) -> int:
     return functools.reduce(operator.xor, data[2:])
 
 
 SYNC_WORD = b"\xef\xaa"
-
-
-@dataclass
-class Event:
-    @classmethod
-    def decode(cls, raw: bytes) -> "Event":
-        if raw[:2] != SYNC_WORD:
-            raise ValueError("Invalid sync word")
-        pass
 
 
 class Request:
@@ -72,32 +65,6 @@ class Request:
     @property
     def size(self):
         return len(self.data)
-
-
-class ResponseMeta(type):
-    register_types = {}
-
-    def __new__(cls, name, bases, attrs, **kwargs):
-        tp = super().__new__(cls, name, bases, attrs, **kwargs)
-        if name != "Response":
-            cls.register_types[tp.msg_id] = tp
-        return tp
-
-
-class Response(metaclass=ResponseMeta):
-    @classmethod
-    def decode(cls, mid: int, data: bytes) -> "Response":
-        return cls.register_types[mid].from_bytes(data)
-
-
-class MidReset(Response):
-    msg_id = MsgId.MID_RESET
-    size = 0
-    data = b""
-
-    @classmethod
-    def from_bytes(cls, data: bytes):
-        return cls()
 
 
 class Reset(Request):
@@ -138,7 +105,7 @@ class Enroll(Request):
         :param timeout: 录入超时时间（单位s）
         """
         self.admin = admin
-        if len(user_name) > 32:
+        if len(user_name.encode()) > 32:
             raise ValueError("User name too long")
         self.user_name = user_name
         self.face_dir = face_dir
@@ -234,7 +201,7 @@ class MidEnrollITG(Request):
         admin: bool,
         user_name: str,
         face_dir: FaceDir,
-        enroll_type: bool,
+        enroll_type: EnrollType,
         enable_duplicate: bool,
         timeout: int,
     ):
@@ -259,7 +226,7 @@ class MidEnrollITG(Request):
             int(admin).to_bytes(1, "big")
             + user_name.encode("utf-8")
             + face_dir.to_bytes(1, "big")
-            + int(enroll_type).to_bytes(1, "big")
+            + enroll_type.to_bytes(1, "big")
             + int(enable_duplicate).to_bytes(1, "big")
             + timeout.to_bytes(1, "big")
             + b"\0\0\0"
@@ -272,8 +239,8 @@ class GetVersion(Request):
     data = b""
 
 
-class InitEncryptIO(Request):
-    command = Command.INIT_ENCRYPTIO
+class InitEncryption(Request):
+    command = Command.INIT_ENCRYPTION
 
     def __init__(self, seed: int):
         """
@@ -292,3 +259,82 @@ class MidSetReleaseEncKey(Request):
         :param enc_key_number: 加密序列
         """
         self.data = enc_key_number
+
+
+class MidSetDebugEncKey(Request):
+    command = Command.MID_SET_DEBUG_ENC_KEY
+
+    def __init__(self, enc_key_number: bytes):
+        """
+
+        :param enc_key_number: 加密序列
+        """
+        self.data = enc_key_number
+
+
+class MidGetSN(Request):
+    command = Command.MID_GET_SN
+    size = 0
+    data = b""
+
+
+class ReadUSBUvcParameters(Request):
+    command = Command.READ_USB_UVC_PARAMETERS
+    size = 0
+    data = b""
+
+
+class SetUSBUvcParameters(Request):
+    command = Command.SET_USB_UVC_PARAMETERS
+
+    def __init__(
+        self, usb_type: Literal["1.1", "2.0"], rotate: bool, flip: bool, quality: int
+    ):
+        """
+        :param usb_type:
+        :param rotate: 图像旋转180度
+        :param flip: 图像镜像
+        :param quality: 图像质量百分比 10-99
+        """
+        self.usb_type = usb_type
+        if usb_type == "1.1":
+            usb_type_b = int(0x11).to_bytes(1, "big")
+        elif usb_type == "2.0":
+            usb_type_b = int(0x20).to_bytes(1, "big")
+        else:
+            raise ValueError("Invalid usb type")
+        byte2: int = 0
+        if rotate:
+            byte2 |= 0x01
+        if flip:
+            byte2 |= 0x02
+        self.data = usb_type_b + byte2.to_bytes(1, "big") + quality.to_bytes(1, "big")
+
+
+class MidUpgradeFW(Request):
+    """
+    USB固件升级
+    """
+
+    command = Command.MID_UPGRADE_FW
+    size = 0
+    data = b""
+
+
+class MidEnrollWithPhoto(Request):
+    """
+    照片注册
+    """
+
+    command = Command.MID_ENROLL_WITH_PHOTO
+
+    def __init__(self, seq: int, photo_data: bytes):
+        """ """
+        self.data = seq.to_bytes(2, "big") + photo_data
+
+
+class DemoMode(Request):
+    command = Command.DEMO_MODE
+
+    def __init__(self, enable: bool):
+        self.data = int(enable).to_bytes(1, "big")

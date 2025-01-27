@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from fm22x.event import Request, Response, SYNC_WORD, calculate_checksum
+from fm22x.request import Request, SYNC_WORD, calculate_checksum
+from fm22x.response import Response
 from typing import Iterable
 from enum import Enum, auto
 
@@ -14,7 +15,6 @@ class Connection:
         self.buffer = bytearray()
         self.state = _State.read_header
 
-        self._mid = None
         self._size = None  # tmp packet
 
     def send(self, req: Request) -> bytes:
@@ -28,7 +28,9 @@ class Connection:
                     break
                 if self.buffer[:2] != SYNC_WORD:
                     raise ValueError("Invalid sync word")
-                self._mid = self.buffer[2]
+                msg_id = self.buffer[2]
+                if msg_id != 0x00:
+                    raise ValueError("Invalid msg id")
                 self._size = int.from_bytes(self.buffer[3:5], "big")
                 self.state = _State.read_data
             if self.state == _State.read_data:
@@ -43,4 +45,4 @@ class Connection:
                 self.state = _State.read_header
 
     def _generate_response(self, data: bytes) -> Response:
-        return Response.decode(self._mid, data)
+        return Response.decode(data)
