@@ -87,6 +87,12 @@ class TestCon(TestCase):
             for ev in self.con.receive(data):
                 pass
 
+    def test_feed_note(self):
+        data = [0xEF, 0xAA, 0x01, 0x00, 0x01, 0x00, 0x00]
+        data = bytes(data)
+        for ev in self.con.receive(data):
+            print(ev)
+
 
 if __name__ == "__main__":
     from unittest import main

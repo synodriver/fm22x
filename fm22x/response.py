@@ -60,9 +60,9 @@ class MsgResultCode(IntEnum):
 
 
 class Response(metaclass=ResponseMeta):
-    def __init__(self, mid: int, result: MsgResultCode, data: bytes):
-        self.mid = mid
-        self.result = result
+    def __init__(self, mid: MID, result: MsgResultCode, data: bytes):
+        self.mid = MID(mid)
+        self.result = MsgResultCode(result)
         self.data = data
 
     @classmethod
