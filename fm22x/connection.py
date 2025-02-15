@@ -51,7 +51,10 @@ class Connection:
                 self.state = _State.read_header
 
     def _generate_response(self, data: bytes) -> Response:
-        return Response.decode(data)
+        d = Response.decode(data)
+        if d.mid == 19:
+            pass
+        return d
 
     def _generate_note(self, data: bytes) -> Note:
         return Note.decode(data)

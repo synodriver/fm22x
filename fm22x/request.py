@@ -105,14 +105,17 @@ class Enroll(Request):
         :param timeout: 录入超时时间（单位s）
         """
         self.admin = admin
-        if len(user_name.encode()) > 32:
+        user_name_b = user_name.encode()
+        if len(user_name_b) <= 32:
+            self.user_name = user_name_b + (32 - len(user_name_b)) * b"\x00"
+        else:
             raise ValueError("User name too long")
-        self.user_name = user_name
+
         self.face_dir = face_dir
         self.timeout = timeout
         self.data = (
             int(admin).to_bytes(1, "big")
-            + user_name.encode("utf-8")
+            + self.user_name
             + face_dir.to_bytes(1, "big")
             + timeout.to_bytes(1, "big")
         )
@@ -130,14 +133,16 @@ class EnrollSingle(Request):
         :param timeout: 录入超时时间（单位s）
         """
         self.admin = admin
-        if len(user_name) > 32:
+        user_name_b = user_name.encode()
+        if len(user_name_b) <= 32:
+            self.user_name = user_name_b + (32 - len(user_name_b)) * b"\x00"
+        else:
             raise ValueError("User name too long")
-        self.user_name = user_name
         self.face_dir = face_dir
         self.timeout = timeout
         self.data = (
             int(admin).to_bytes(1, "big")
-            + user_name.encode("utf-8")
+            + self.user_name
             + face_dir.to_bytes(1, "big")
             + timeout.to_bytes(1, "big")
         )

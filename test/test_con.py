@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+import sys
+sys.path.append(".")
 from unittest import TestCase
 
 from fm22x.connection import Connection
-from fm22x.response import MidReset
+from fm22x.response import MidReset, MidEnroll
 
 
 class TestCon(TestCase):
@@ -92,6 +94,21 @@ class TestCon(TestCase):
         data = bytes(data)
         for ev in self.con.receive(data):
             print(ev)
+
+    def test_receive_real(self):
+        with open('../log.bin', 'rb') as f:
+            data = f.read()
+        for ev in self.con.receive(data):
+            print(ev, ev.__dict__)
+
+    def test_receive(self):
+        # with open("../read.bin", "rb") as f:
+        #     data = f.read()
+        data = bytes.fromhex("EF AA 01 00 11 01 01 00 74 00 BB 00 7F 00 C0 81 00 00 00 00 00 A0 41 EF AA 00 00 02 13 0D 1C")
+        for ev in self.con.receive(data):
+            print(ev, ev.__dict__)
+            if isinstance(ev, MidEnroll):
+                pass
 
 
 if __name__ == "__main__":
