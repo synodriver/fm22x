@@ -104,11 +104,13 @@ class TestCon(TestCase):
     def test_receive(self):
         # with open("../read.bin", "rb") as f:
         #     data = f.read()
-        data = bytes.fromhex("EF AA 01 00 11 01 01 00 74 00 BB 00 7F 00 C0 81 00 00 00 00 00 A0 41 EF AA 00 00 02 13 0D 1C")
+        data = bytes.fromhex("EF AA 00 00 02 1D 0A 15")
         for ev in self.con.receive(data):
             print(ev, ev.__dict__)
             if isinstance(ev, MidEnroll):
                 pass
+
+
 
 
 if __name__ == "__main__":
