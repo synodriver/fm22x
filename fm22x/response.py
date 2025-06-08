@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from enum import IntEnum
-from typing import Self, Literal
+from typing import Literal, Optional, Self
 
 
 class MID(IntEnum):
@@ -33,7 +33,7 @@ class ResponseMeta(type):
     def __new__(cls, name, bases, attrs, **kwargs):
         tp = super().__new__(cls, name, bases, attrs, **kwargs)
         if name != "Response":
-            cls.register_types[tp.mid] = tp
+            cls.register_types[tp.mid] = tp  # type: ignore
         return tp
 
 
@@ -98,17 +98,17 @@ class MidVerify(Response):
     mid = MID.MID_VERIFY
 
     @property
-    def user_id(self):
+    def user_id(self) -> Optional[int]:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
 
     @property
-    def user_name(self):
+    def user_name(self) -> Optional[str]:
         if self.result == MsgResultCode.SUCCESS:
             return self.data[2:-2].decode("utf-8")
 
     @property
-    def admin(self):
+    def admin(self) -> Optional[bool]:
         """
         is admin
         :return:
@@ -117,7 +117,7 @@ class MidVerify(Response):
             return bool(self.data[-2])
 
     @property
-    def unlock_status(self):
+    def unlock_status(self) -> Optional[int]:
         if self.result == MsgResultCode.SUCCESS:
             return self.data[-1]
 
@@ -126,7 +126,7 @@ class MidEnroll(Response):
     mid = MID.MID_ENROLL
 
     @property
-    def user_id(self):
+    def user_id(self) -> Optional[int]:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
 
@@ -144,12 +144,12 @@ class MidEnrollSingle(Response):
     mid = MID.MID_ENROLL_SINGLE
 
     @property
-    def user_id(self):
+    def user_id(self) -> Optional[int]:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
 
     @property
-    def face_direction(self):
+    def face_direction(self) -> Optional[int]:
         """
         01（表示正脸录入）
         :return:
@@ -170,17 +170,17 @@ class MidGetUserInfo(Response):
     mid = MID.MID_GETUSERINFO
 
     @property
-    def user_id(self):
+    def user_id(self) -> Optional[int]:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
 
     @property
-    def user_name(self):
+    def user_name(self) -> Optional[str]:
         if self.result == MsgResultCode.SUCCESS:
             return self.data[2:-1].decode("utf-8")
 
     @property
-    def admin(self):
+    def admin(self) -> Optional[bool]:
         """
         is admin
         :return:
@@ -197,7 +197,7 @@ class MidGetAllUserID(Response):
     mid = MID.MID_GET_ALL_USERID
 
     @property
-    def user_counts(self):
+    def user_counts(self) -> Optional[int]:
         """
         已注册用户数量
         :return:
@@ -206,7 +206,7 @@ class MidGetAllUserID(Response):
             return self.data[0]
 
     @property
-    def user_id(self) -> list:
+    def user_id(self) -> Optional[list]:
         """
         所有已注册用户ID，使用连续两个字节存储一个ID，先存高八位
         :return:
@@ -222,7 +222,7 @@ class MidEnrollITG(Response):
     mid = MID.MID_ENROLL_ITG
 
     @property
-    def user_id(self):
+    def user_id(self) -> Optional[int]:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
 
@@ -231,7 +231,7 @@ class MidGetVersion(Response):
     mid = MID.MID_GET_VERSION
 
     @property
-    def version(self):
+    def version(self) -> Optional[str]:
         if self.result == MsgResultCode.SUCCESS:
             return self.data.decode("utf-8")
 
@@ -240,7 +240,7 @@ class MidInitEncryption(Response):
     mid = MID.MID_INIT_ENCRYPTION
 
     @property
-    def device_id(self):
+    def device_id(self) -> bytes:
         return self.data
 
 
@@ -273,6 +273,8 @@ class ReadUSBUvcParameters(Response):
             return "1.1"
         elif self.data[0] == 0x20:
             return "2.0"
+        else:
+            raise ValueError("Invalid usb type")
 
     @property
     def rotate(self) -> bool:

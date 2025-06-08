@@ -2,7 +2,6 @@
 import functools
 import operator
 from enum import IntEnum
-
 from typing import Literal
 
 
@@ -52,6 +51,10 @@ SYNC_WORD = b"\xef\xaa"
 
 
 class Request:
+    command = None
+    size = 0
+    data = b""
+
     def encode(self) -> bytes:
         data = (
             SYNC_WORD

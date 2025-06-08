@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from fm22x.note import Note
-from fm22x.request import Request, SYNC_WORD, calculate_checksum
-from fm22x.response import Response
-from typing import Iterable
 from enum import Enum, auto
+from typing import Iterable
+
+from fm22x.note import Note
+from fm22x.request import SYNC_WORD, Request, calculate_checksum
+from fm22x.response import Response
 
 
 class _State(Enum):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import Self
 from enum import IntEnum
+from typing import Self
 
 
 class NID(IntEnum):
@@ -35,7 +35,7 @@ class NoteMeta(type):
     def __new__(cls, name, bases, attrs, **kwargs):
         tp = super().__new__(cls, name, bases, attrs, **kwargs)
         if name != "Note":
-            cls.register_types[tp.nid] = tp
+            cls.register_types[tp.nid] = tp #type: ignore
         return tp
 
 
