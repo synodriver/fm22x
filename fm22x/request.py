@@ -51,11 +51,12 @@ SYNC_WORD = b"\xef\xaa"
 
 
 class Request:
-    command = None
-    size = 0
+    command: int | Command | None = None
+    # size = 0
     data = b""
 
     def encode(self) -> bytes:
+        assert self.command is not None, "Command not set"
         data = (
             SYNC_WORD
             + self.command.to_bytes(1, "big")
@@ -72,13 +73,13 @@ class Request:
 
 class Reset(Request):
     command = Command.RESET
-    size = 0
+    # size = 0
     data = b""
 
 
 class GetStatus(Request):
     command = Command.GET_STATUS
-    size = 0
+    # size = 0
     data = b""
 
 
@@ -165,7 +166,7 @@ class DeleteUser(Request):
 
 class DeleteAll(Request):
     command = Command.DELETE_ALL
-    size = 0
+    # size = 0
     data = b""
 
 
@@ -187,7 +188,7 @@ class FaceReset(Request):
     """
 
     command = Command.FACE_RESET
-    size = 0
+    # size = 0
     data = b""
 
 
@@ -197,7 +198,7 @@ class MidGetAllUserid(Request):
     """
 
     command = Command.MID_GET_ALL_USERID
-    size = 0
+    # size = 0
     data = b""
 
 
@@ -243,7 +244,7 @@ class MidEnrollITG(Request):
 
 class GetVersion(Request):
     command = Command.GET_VERSION
-    size = 0
+    # size = 0
     data = b""
 
 
@@ -282,13 +283,13 @@ class MidSetDebugEncKey(Request):
 
 class MidGetSN(Request):
     command = Command.MID_GET_SN
-    size = 0
+    # size = 0
     data = b""
 
 
 class ReadUSBUvcParameters(Request):
     command = Command.READ_USB_UVC_PARAMETERS
-    size = 0
+    # size = 0
     data = b""
 
 
@@ -325,7 +326,7 @@ class MidUpgradeFW(Request):
     """
 
     command = Command.MID_UPGRADE_FW
-    size = 0
+    # size = 0
     data = b""
 
 

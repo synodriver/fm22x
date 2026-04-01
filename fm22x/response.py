@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from enum import IntEnum
-from typing import Literal, Optional, Self
+from typing import Literal
 
 
 class MID(IntEnum):
@@ -28,7 +28,7 @@ class MID(IntEnum):
 
 
 class ResponseMeta(type):
-    register_types = {}
+    register_types: dict[int | MID, type["Response"]] = {}
 
     def __new__(cls, name, bases, attrs, **kwargs):
         tp = super().__new__(cls, name, bases, attrs, **kwargs)
@@ -60,13 +60,14 @@ class MsgResultCode(IntEnum):
 
 
 class Response(metaclass=ResponseMeta):
-    def __init__(self, mid: MID, result: MsgResultCode, data: bytes):
+    def __init__(self, mid: MID | int, result: MsgResultCode | int, data: bytes):
+
         self.mid = MID(mid)
         self.result = MsgResultCode(result)
         self.data = data
 
     @classmethod
-    def decode(cls, data: bytes) -> Self:
+    def decode(cls, data: bytes) -> "Response":
         mid = data[0]
         if mid not in cls.register_types:
             raise ValueError("Invalid mid")
@@ -98,37 +99,42 @@ class MidVerify(Response):
     mid = MID.MID_VERIFY
 
     @property
-    def user_id(self) -> Optional[int]:
+    def user_id(self) -> int | None:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
+        return None
 
     @property
-    def user_name(self) -> Optional[str]:
+    def user_name(self) -> str | None:
         if self.result == MsgResultCode.SUCCESS:
             return self.data[2:-2].decode("utf-8")
+        return None
 
     @property
-    def admin(self) -> Optional[bool]:
+    def admin(self) -> bool | None:
         """
         is admin
         :return:
         """
         if self.result == MsgResultCode.SUCCESS:
             return bool(self.data[-2])
+        return None
 
     @property
-    def unlock_status(self) -> Optional[int]:
+    def unlock_status(self) -> int | None:
         if self.result == MsgResultCode.SUCCESS:
             return self.data[-1]
+        return None
 
 
 class MidEnroll(Response):
     mid = MID.MID_ENROLL
 
     @property
-    def user_id(self) -> Optional[int]:
+    def user_id(self) -> int | None:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
+        return None
 
     @property
     def face_direction(self):
@@ -144,18 +150,20 @@ class MidEnrollSingle(Response):
     mid = MID.MID_ENROLL_SINGLE
 
     @property
-    def user_id(self) -> Optional[int]:
+    def user_id(self) -> int | None:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
+        return None
 
     @property
-    def face_direction(self) -> Optional[int]:
+    def face_direction(self) -> int | None:
         """
         01（表示正脸录入）
         :return:
         """
         if self.result == MsgResultCode.SUCCESS:
             return self.data[2]
+        return None
 
 
 class MidDelUser(Response):
@@ -170,23 +178,26 @@ class MidGetUserInfo(Response):
     mid = MID.MID_GETUSERINFO
 
     @property
-    def user_id(self) -> Optional[int]:
+    def user_id(self) -> int | None:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
+        return None
 
     @property
-    def user_name(self) -> Optional[str]:
+    def user_name(self) -> str| None:
         if self.result == MsgResultCode.SUCCESS:
             return self.data[2:-1].decode("utf-8")
+        return None
 
     @property
-    def admin(self) -> Optional[bool]:
+    def admin(self) -> bool| None:
         """
         is admin
         :return:
         """
         if self.result == MsgResultCode.SUCCESS:
             return bool(self.data[-1])
+        return None
 
 
 class MidFaceReset(Response):
@@ -197,16 +208,17 @@ class MidGetAllUserID(Response):
     mid = MID.MID_GET_ALL_USERID
 
     @property
-    def user_counts(self) -> Optional[int]:
+    def user_counts(self) -> int | None:
         """
         已注册用户数量
         :return:
         """
         if self.result == MsgResultCode.SUCCESS:
             return self.data[0]
+        return None
 
     @property
-    def user_id(self) -> Optional[list]:
+    def user_id(self) -> list[int] | None:
         """
         所有已注册用户ID，使用连续两个字节存储一个ID，先存高八位
         :return:
@@ -216,24 +228,27 @@ class MidGetAllUserID(Response):
                 int.from_bytes(self.data[i : i + 2], "big")
                 for i in range(1, len(self.data), 2)
             ]
+        return None
 
 
 class MidEnrollITG(Response):
     mid = MID.MID_ENROLL_ITG
 
     @property
-    def user_id(self) -> Optional[int]:
+    def user_id(self) -> int | None:
         if self.result == MsgResultCode.SUCCESS:
             return int.from_bytes(self.data[:2], "big")
+        return None
 
 
 class MidGetVersion(Response):
     mid = MID.MID_GET_VERSION
 
     @property
-    def version(self) -> Optional[str]:
+    def version(self) -> str | None:
         if self.result == MsgResultCode.SUCCESS:
             return self.data.decode("utf-8")
+        return None
 
 
 class MidInitEncryption(Response):

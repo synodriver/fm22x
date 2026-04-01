@@ -30,22 +30,22 @@ class FaceState(IntEnum):
 
 
 class NoteMeta(type):
-    register_types = {}
+    register_types: dict[int | NID, type["Note"]] = {}
 
     def __new__(cls, name, bases, attrs, **kwargs):
-        tp = super().__new__(cls, name, bases, attrs, **kwargs)
+        tp: type["Note"] = super().__new__(cls, name, bases, attrs, **kwargs)  # type: ignore
         if name != "Note":
             cls.register_types[tp.nid] = tp #type: ignore
         return tp
 
 
 class Note(metaclass=NoteMeta):
-    def __init__(self, nid: NID, data: bytes):
+    def __init__(self, nid: NID | int, data: bytes):
         self.nid = NID(nid)
         self.data = data
 
     @classmethod
-    def decode(cls, data: bytes) -> Self:
+    def decode(cls, data: bytes) -> "Note":
         nid = data[0]
         if nid not in cls.register_types:
             raise ValueError("Invalid nid")
