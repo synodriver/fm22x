@@ -35,7 +35,7 @@ class NoteMeta(type):
     def __new__(cls, name, bases, attrs, **kwargs):
         tp: type["Note"] = super().__new__(cls, name, bases, attrs, **kwargs)  # type: ignore
         if name != "Note":
-            cls.register_types[tp.nid] = tp #type: ignore
+            cls.register_types[tp.nid] = tp  # type: ignore
         return tp
 
 

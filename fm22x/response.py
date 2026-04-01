@@ -184,13 +184,13 @@ class MidGetUserInfo(Response):
         return None
 
     @property
-    def user_name(self) -> str| None:
+    def user_name(self) -> str | None:
         if self.result == MsgResultCode.SUCCESS:
             return self.data[2:-1].decode("utf-8")
         return None
 
     @property
-    def admin(self) -> bool| None:
+    def admin(self) -> bool | None:
         """
         is admin
         :return:
